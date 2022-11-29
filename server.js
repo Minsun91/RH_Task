@@ -5,12 +5,14 @@ let profiles = [
     {
         id: "1",
         location: "Frankfurt",
-        userId: "2",
     },
     {
         id: "2",
         location: "Seoul",
-        userId: "1",
+    },
+    {
+        id: "3",
+        location: "London",
     },
 ];
 
@@ -26,6 +28,12 @@ let users = [
         name: "Elon",
         lastname: "Musk",
         dateofbirth: "13-10-1998",
+    },
+    {
+        id: "3",
+        name: "Minji",
+        lastname: "Lee",
+        dateofbirth: "13-08-1996",
     },
 ];
 
@@ -53,75 +61,66 @@ const typeDefs = gql`
         id: ID!
         name: String!
         lastname: String!
-        dateofbirth: Date
+        dateofbirth: Date!
     }
 
     type Profile {
         id: ID!
         location: String!
-        userId: User!
+        user: [User!]!
     }
 
     type Query {
         allUsers: [User!]!
-        allProfiles(id:ID!): [Profile!]!
-        user(id: ID!): [User!]!
-        selectedUser(id:ID!):[Profile!]!
+        allProfiles: [Profile!]!
+        getProfile(id: ID!): [Profile!]!
+        user(id: ID!): [User]!
     }
 
     type Mutation {
-        editProfile(location: String!, userId: ID!): Profile!
-        postProfile(location: String!, id: ID!): Profile!
-        postUser(name:String!, id:ID!, lastname:String!, dateofbirth:Date) : User!
-        deleteUser(id:ID!):Boolean!
+        editProfile(
+            location: String!
+            id: ID!
+            name: String!
+            lastname: String!
+            dateofbirth: Date
+        ): Profile!
     }
 `;
 
 const resolvers = {
     Query: {
-        allProfiles(_,{id}) {
-            return profiles;
+        getProfile(_, { id }) {
+            const result = profiles.filter((profile) => profile.id === id);
+            if(result) return result;
         },
+
         allUsers() {
             return users;
         },
-        user(_, { id }) {
-            const resultUser = users.find((user) => user.id === id);
-            const resultProfile = profiles.find(
-                (profiles) => profiles.userId === id
-            );
-            const result = `userId : ${resultUser.id}, name : ${resultUser.name}, location : ${resultProfile.location}`
-            console.log(result)
-            return result;
-        },
-    },
 
-    Mutation: {
-        postProfile(_, { location, id, userId }) {
-            const newProfile = { id: profiles.length + 1, location, userId };
-            profiles.push(newProfile);
-            return newProfile;
-        },
-        postUser(_, {name, lastname, id, dateofbirth}) {
-            const newUser = { id : users.length+1, name, lastname, dateofbirth};
-            users.push(newUser);
-            return newUser;
-        },
-        editProfile(_, { location, id }) {},
-        deleteUser(_,{id}){
-            const result = users.find((user)=> user.id === id);
-            if(!result) return false;
-            users = users.find((user)=> user.id !== id);
-            return true;
-
+        allProfiles() {
+            return profiles;
         }
     },
 
+    Mutation: {
+        editProfile(_, { location, id }) {
+            const editprofile = users.find((user) => user.id === id);
+            const deleteprofile = profiles.filter(
+                (profile) => profile.id !== editprofile.id
+            );
+            const newProfile = { id, location };
+            profiles.push(newProfile);
+            console.log(deleteprofile, "1", newProfile);
+            return { deleteprofile, newProfile };
+        },
+    },
+
     Profile: {
-        userId({ userId }) {
-            const profileUser = users.find((user) => user.id === userId);
-            console.log(profileUser)
-            return profileUser
+        user({ id }) {
+            const result = users.filter((user) => user.id === id);
+            return result;
         },
     },
 };
